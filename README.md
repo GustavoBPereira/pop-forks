@@ -3,7 +3,7 @@
 Simple python project that list the most starred forks of a repository
 
 ### Todos:
- - [ ] Create requirements.txt
+ - [x] Create requirements.txt
  - [ ] Get parameters:
    - [ ] Repository url
      - [ ] Convert this url in github api url just like main_repo_url var in main.py
