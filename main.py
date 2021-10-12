@@ -1,20 +1,16 @@
 import json
-from time import time, sleep
+import sys
+from time import sleep
 
 import requests
 
 from show_result import leaderboard
-from utils import get_fork_data
+from utils import get_fork_data, get_api_url_by_repository_url, create_json
 
-GIT_HUB_API_URL = 'https://api.github.com'
 exceeded_message = 'API rate limit exceeded'
 
-main_repo_url = f'{GIT_HUB_API_URL}/repos/mattdiamond/Recorderjs'
-main_repo_data = json.loads(requests.get(main_repo_url).text)
-forks_url = [main_repo_data['forks_url']]
 
-
-def get_forks_list(page=1, per_page=100):
+def get_forks_list(forks_url, page=1, per_page=100):
     try:
         url = f'{forks_url[0]}?page={page}&per_page={per_page}'
     except IndexError:
@@ -25,38 +21,44 @@ def get_forks_list(page=1, per_page=100):
     return json.loads(forks_request.text)
 
 
-fork_count = 0
-page_number = 1
-forks_data = {'repositories': []}
+def crawl_forks(forks_api_url):
+    fork_count = 0
+    page_number = 1
+    forks_data = {'repositories': []}
+    forks_url = [forks_api_url]
 
-while forks_url:
-    forks_lists = get_forks_list(page=page_number)
+    while forks_url:
+        forks_lists = get_forks_list(forks_url, page=page_number)
 
-    if forks_lists == exceeded_message:
-        forks_data['error'] = exceeded_message
-        break
-    if not forks_lists:
-        if len(forks_url) > 0:
-            page_number = 1
-            forks_url.pop(0)
+        if forks_lists == exceeded_message:
+            forks_data['error'] = exceeded_message
+            break
+        if not forks_lists:
+            if len(forks_url) > 0:
+                page_number = 1
+                forks_url.pop(0)
 
-    for fork in forks_lists:
-        data = get_fork_data(fork)
-        forks_data['repositories'].append(data)
+        for fork in forks_lists:
+            data = get_fork_data(fork)
+            forks_data['repositories'].append(data)
 
-        if data['forks_count'] > 0:
-            forks_url.append(fork['forks_url'])
-        fork_count += 1
+            if data['forks_count'] > 0:
+                forks_url.append(fork['forks_url'])
+            fork_count += 1
 
-    page_number += 1
-    sleep(0.5)
+        page_number += 1
+        sleep(0.5)
 
-print(f'Quantidade de forks analizados: {fork_count}')
+    print(f'Quantidade de forks analizados: {fork_count}')
+    return forks_data
 
-local_time_str = str(int(time()))
-# int before call str to remove decimal numbers
 
-with open(f'{local_time_str}.json', 'w', encoding='utf-8') as f:
-    json.dump(forks_data, f, ensure_ascii=False, indent=4)
+if __name__ == '__main__':
+    # First parameter (sys.argv[1]) = github repository url
+    repository_url = get_api_url_by_repository_url(sys.argv[1])
+    main_repo_data = json.loads(requests.get(repository_url).text)
 
-leaderboard(forks_data)
+    forks_data = crawl_forks(main_repo_data['forks_url'])
+
+    create_json(forks_data)
+    leaderboard(forks_data)
