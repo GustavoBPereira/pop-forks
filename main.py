@@ -49,7 +49,7 @@ def crawl_forks(forks_api_url):
         page_number += 1
         sleep(0.5)
 
-    print(f'Quantidade de forks analizados: {fork_count}')
+    print(f'Number of analyzed forks: {fork_count}')
     return forks_data
 
 
