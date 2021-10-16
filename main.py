@@ -55,10 +55,21 @@ def crawl_forks(forks_api_url):
 
 if __name__ == '__main__':
     # First parameter (sys.argv[1]) = github repository url
-    repository_url = get_api_url_by_repository_url(sys.argv[1])
+    try:
+        repository_url = get_api_url_by_repository_url(sys.argv[1])
+    except IndexError as err:
+        raise Exception('Github repository url is required in the first parameter') from err
+
+    try:
+        top_quantity = int(sys.argv[2])
+    except IndexError:
+        top_quantity = 15
+    except ValueError as err:
+        raise Exception('Top quantity must be an integer value') from err
+
     main_repo_data = json.loads(requests.get(repository_url).text)
 
     forks_data = crawl_forks(main_repo_data['forks_url'])
 
     create_json(forks_data)
-    leaderboard(forks_data)
+    leaderboard(forks_data, top_quantity)
